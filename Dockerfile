@@ -74,11 +74,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /out/app .
 
 # 4. 创建共享目录并设置权限
-RUN mkdir -p /app/images && \
-    chmod 777 /app/images
+RUN mkdir -p /app/images /data && \
+    chmod 777 /app/images /data
 
 # 5. 设置默认 Chrome 路径（rod 会用）
 ENV ROD_BROWSER_BIN=/usr/bin/google-chrome
+
+# 6. 设置 Cookies 持久化路径 (Railway 使用 /data 卷)
+ENV COOKIES_PATH=/data/cookies.json
 
 EXPOSE 18060
 

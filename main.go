@@ -19,6 +19,11 @@ func main() {
 	flag.StringVar(&port, "port", ":18060", "端口")
 	flag.Parse()
 
+	// 优先使用 PORT 环境变量 (Railway 等 PaaS 平台)
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		port = ":" + envPort
+	}
+
 	if len(binPath) == 0 {
 		binPath = os.Getenv("ROD_BROWSER_BIN")
 	}
