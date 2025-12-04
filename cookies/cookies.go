@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type Cookier interface {
@@ -29,10 +30,10 @@ func NewLoadCookie(path string) Cookier {
 
 // LoadCookies 从文件中加载 cookies。
 func (c *localCookie) LoadCookies() ([]byte, error) {
-
+	logrus.Infof("加载 cookies: %s", c.path)
 	data, err := os.ReadFile(c.path)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read cookies from tmp file")
+		return nil, errors.Wrapf(err, "读取 cookies 失败: %s", c.path)
 	}
 
 	return data, nil
@@ -40,6 +41,7 @@ func (c *localCookie) LoadCookies() ([]byte, error) {
 
 // SaveCookies 保存 cookies 到文件中。
 func (c *localCookie) SaveCookies(data []byte) error {
+	logrus.Infof("保存 cookies: %s", c.path)
 	// 确保父目录存在
 	dir := filepath.Dir(c.path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -58,24 +60,12 @@ func (c *localCookie) DeleteCookies() error {
 }
 
 // GetCookiesFilePath 获取 cookies 文件路径。
-// 为了向后兼容，如果旧路径 /tmp/cookies.json 存在，则继续使用；
-// 否则使用当前目录下的 cookies.json
+// 优先使用环境变量 COOKIES_PATH，否则使用当前目录下的 cookies.json
 func GetCookiesFilePath() string {
-	// 旧路径：/tmp/cookies.json
-	tmpDir := os.TempDir()
-	oldPath := filepath.Join(tmpDir, "cookies.json")
-
-	// 检查旧路径文件是否存在
-	if _, err := os.Stat(oldPath); err == nil {
-		// 文件存在，使用旧路径（向后兼容）
-		return oldPath
-	}
-
-	path := os.Getenv("COOKIES_PATH") // 判断环境变量
+	path := os.Getenv("COOKIES_PATH")
 	if path == "" {
-		path = "cookies.json" // fallback，本地调试时用当前目录
+		path = "cookies.json"
 	}
-
-	// 文件不存在，使用新路径（当前目录）
+	logrus.Debugf("cookies 路径: %s", path)
 	return path
 }
