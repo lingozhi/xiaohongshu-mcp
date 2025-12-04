@@ -10,7 +10,6 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/mattn/go-runewidth"
 	"github.com/sirupsen/logrus"
-	"github.com/xpzouying/headless_browser"
 	"github.com/xpzouying/xiaohongshu-mcp/browser"
 	"github.com/xpzouying/xiaohongshu-mcp/configs"
 	"github.com/xpzouying/xiaohongshu-mcp/cookies"
@@ -453,7 +452,7 @@ func (s *XiaohongshuService) UnfavoriteFeed(ctx context.Context, feedID, xsecTok
 	return &ActionResult{FeedID: feedID, Success: true, Message: "取消收藏成功或未收藏"}, nil
 }
 
-func newBrowser() *headless_browser.Browser {
+func newBrowser() *browser.Browser {
 	return browser.NewBrowser(configs.IsHeadless(), browser.WithBinPath(configs.GetBinPath()))
 }
 

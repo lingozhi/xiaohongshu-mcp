@@ -77,14 +77,10 @@ COPY --from=builder /out/app .
 RUN mkdir -p /app/images /data && \
     chmod 777 /app/images /data
 
-# 5. 创建 Chrome wrapper 脚本（容器中必须使用 --no-sandbox）
-RUN printf '#!/bin/bash\nexec /usr/bin/google-chrome --no-sandbox --disable-dev-shm-usage "$@"\n' > /usr/local/bin/chrome-wrapper && \
-    chmod +x /usr/local/bin/chrome-wrapper
+# 5. 设置默认 Chrome 路径（rod 会用）
+ENV ROD_BROWSER_BIN=/usr/bin/google-chrome
 
-# 6. 设置 Chrome wrapper 路径（rod 会用）
-ENV ROD_BROWSER_BIN=/usr/local/bin/chrome-wrapper
-
-# 7. 设置 Cookies 持久化路径 (Railway 使用 /data 卷)
+# 6. 设置 Cookies 持久化路径 (Railway 使用 /data 卷)
 ENV COOKIES_PATH=/data/cookies.json
 
 EXPOSE 18060
