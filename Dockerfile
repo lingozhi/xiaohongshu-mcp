@@ -78,7 +78,7 @@ RUN mkdir -p /app/images /data && \
     chmod 777 /app/images /data
 
 # 5. 创建 Chrome wrapper 脚本（容器中必须使用 --no-sandbox）
-RUN echo '#!/bin/bash\nexec /usr/bin/google-chrome --no-sandbox --disable-dev-shm-usage "$@"' > /usr/local/bin/chrome-wrapper && \
+RUN printf '#!/bin/bash\nexec /usr/bin/google-chrome --no-sandbox --disable-dev-shm-usage "$@"\n' > /usr/local/bin/chrome-wrapper && \
     chmod +x /usr/local/bin/chrome-wrapper
 
 # 6. 设置 Chrome wrapper 路径（rod 会用）
