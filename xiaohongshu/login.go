@@ -120,14 +120,6 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 
 	logrus.Info("开始等待扫码登录...")
 
-	// 二维码选择器（与 FetchQrcodeImage 保持一致）
-	qrcodeSelectors := []string{
-		".login-container .qrcode-img",
-		".qrcode-img",
-		"[class*='qrcode'] img",
-		".login-modal img",
-	}
-
 	// 登录成功的选择器
 	loginSuccessSelectors := []string{
 		".main-container .user .link-wrapper .channel",
@@ -137,8 +129,6 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	}
 
 	checkCount := 0
-	qrcodeDisappeared := false
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,23 +136,6 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 			return false
 		case <-ticker.C:
 			checkCount++
-
-			// 检测二维码是否存在
-			qrcodeExists := false
-			for _, selector := range qrcodeSelectors {
-				if exists, _, _ := pp.Has(selector); exists {
-					qrcodeExists = true
-					break
-				}
-			}
-
-			// 二维码消失时刷新页面（只刷新一次）
-			if !qrcodeExists && !qrcodeDisappeared {
-				qrcodeDisappeared = true
-				logrus.Info("二维码已消失，刷新页面检测登录状态...")
-				pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
-				time.Sleep(2 * time.Second)
-			}
 
 			// 检测登录成功元素
 			for _, selector := range loginSuccessSelectors {
@@ -172,9 +145,9 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 				}
 			}
 
-			// 每 10 次检测输出一次日志
-			if checkCount%10 == 0 {
-				logrus.Infof("等待登录中... (已检测 %d 次)", checkCount)
+			// 每 30 秒输出一次日志
+			if checkCount%15 == 0 {
+				logrus.Infof("等待扫码中... (已等待 %d 秒)", checkCount*2)
 			}
 		}
 	}
