@@ -2,8 +2,6 @@ package browser
 
 import (
 	"encoding/json"
-	"os"
-	"strings"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -48,10 +46,8 @@ func NewBrowser(headless bool, options ...Option) *Browser {
 	// 设置无头模式
 	l = l.Headless(headless)
 
-	// 容器环境必须禁用沙箱
-	if os.Getenv("ROD_NO_SANDBOX") != "" || isContainerEnv() {
-		l = l.NoSandbox(true)
-	}
+	// 禁用沙箱（容器/云环境必须）
+	l = l.NoSandbox(true)
 
 	// 禁用 /dev/shm 使用（容器环境需要）
 	l = l.Set("disable-dev-shm-usage")
@@ -87,22 +83,6 @@ func (b *Browser) Close() {
 	if b.browser != nil {
 		_ = b.browser.Close()
 	}
-}
-
-// isContainerEnv 检测是否在容器环境中
-func isContainerEnv() bool {
-	// 检查 /.dockerenv 文件
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return true
-	}
-	// 检查 cgroup
-	if data, err := os.ReadFile("/proc/1/cgroup"); err == nil {
-		content := string(data)
-		if strings.Contains(content, "docker") || strings.Contains(content, "kubepods") || strings.Contains(content, "containerd") {
-			return true
-		}
-	}
-	return false
 }
 
 // setCookiesFromJSON 从 JSON 字符串设置 cookies
