@@ -115,10 +115,20 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 
 func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	pp := a.page.Context(ctx)
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
 
-	logrus.Info("开始等待扫码登录...")
+	logrus.Info("开始等待扫码登录（60秒后开始检测）...")
+
+	// 先等待 60 秒，让用户有时间扫码
+	select {
+	case <-ctx.Done():
+		logrus.Warn("等待登录超时")
+		return false
+	case <-time.After(60 * time.Second):
+		logrus.Info("开始检测登录状态...")
+	}
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
 
 	checkCount := 0
 	for {
@@ -129,7 +139,7 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 		case <-ticker.C:
 			checkCount++
 
-			// 每次检测都刷新页面，确保获取最新状态
+			// 导航到 explore 页面检测登录状态
 			pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
 			time.Sleep(1 * time.Second)
 
@@ -139,7 +149,7 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 				return true
 			}
 
-			logrus.Infof("等待扫码中... (已等待 %d 秒)", checkCount*5)
+			logrus.Infof("检测登录状态... (第 %d 次)", checkCount)
 		}
 	}
 }
