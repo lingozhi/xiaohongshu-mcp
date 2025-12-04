@@ -146,6 +146,8 @@ func (s *XiaohongshuService) GetLoginQrcode(ctx context.Context) (*LoginQrcodeRe
 			if loginAction.WaitForLogin(ctxTimeout) {
 				if er := saveCookies(page); er != nil {
 					logrus.Errorf("failed to save cookies: %v", er)
+				} else {
+					logrus.Info("cookies 保存成功")
 				}
 			}
 		}()

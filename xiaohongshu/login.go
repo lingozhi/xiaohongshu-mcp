@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type LoginAction struct {
@@ -114,17 +115,49 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 
 func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	pp := a.page.Context(ctx)
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
+	logrus.Info("开始等待扫码登录...")
+
+	// 登录成功的选择器
+	loginSuccessSelectors := []string{
+		".main-container .user .link-wrapper .channel",
+		".user .avatar",
+		".sidebar .user-info",
+		".side-bar .user",
+	}
+
+	checkCount := 0
 	for {
 		select {
 		case <-ctx.Done():
+			logrus.Warn("等待登录超时")
 			return false
 		case <-ticker.C:
-			el, err := pp.Element(".main-container .user .link-wrapper .channel")
-			if err == nil && el != nil {
-				return true
+			checkCount++
+
+			// 检测二维码弹窗是否消失（说明扫码成功或取消）
+			qrcodeExists, _, _ := pp.Has(".login-container .qrcode-img")
+			if !qrcodeExists {
+				// 二维码消失，刷新页面检测登录状态
+				logrus.Info("二维码已消失，刷新页面检测登录状态...")
+				pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
+				time.Sleep(2 * time.Second)
+			}
+
+			// 检测登录成功元素
+			for _, selector := range loginSuccessSelectors {
+				el, err := pp.Element(selector)
+				if err == nil && el != nil {
+					logrus.Info("检测到登录成功")
+					return true
+				}
+			}
+
+			// 每 10 次检测输出一次日志
+			if checkCount%10 == 0 {
+				logrus.Infof("等待登录中... (已检测 %d 次)", checkCount)
 			}
 		}
 	}
