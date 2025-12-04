@@ -79,7 +79,7 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 	}
 	for _, selector := range loginBtnSelectors {
 		if el, err := pp.Timeout(2 * time.Second).Element(selector); err == nil && el != nil {
-			_ = el.Click()
+			_ = el.MustClick()
 			time.Sleep(1 * time.Second)
 			break
 		}
