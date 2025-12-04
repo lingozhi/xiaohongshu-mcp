@@ -59,24 +59,54 @@ func (a *LoginAction) Login(ctx context.Context) error {
 func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error) {
 	pp := a.page.Context(ctx)
 
-	// 导航到小红书首页，这会触发二维码弹窗
+	// 导航到小红书首页
 	pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
 
-	// 等待一小段时间让页面完全加载
-	time.Sleep(2 * time.Second)
+	// 等待页面完全加载
+	time.Sleep(3 * time.Second)
 
 	// 检查是否已经登录
 	if exists, _, _ := pp.Has(".main-container .user .link-wrapper .channel"); exists {
 		return "", true, nil
 	}
 
-	// 获取二维码图片
-	src, err := pp.MustElement(".login-container .qrcode-img").Attribute("src")
-	if err != nil {
-		return "", false, errors.Wrap(err, "get qrcode src failed")
+	// 尝试点击登录按钮触发二维码弹窗
+	loginBtnSelectors := []string{
+		".login-btn",
+		".login-button",
+		"[class*='login']",
+		".side-bar .login-btn",
 	}
+	for _, selector := range loginBtnSelectors {
+		if el, err := pp.Timeout(2 * time.Second).Element(selector); err == nil && el != nil {
+			_ = el.Click()
+			time.Sleep(1 * time.Second)
+			break
+		}
+	}
+
+	// 等待二维码出现（最多30秒）
+	qrcodeSelectors := []string{
+		".login-container .qrcode-img",
+		".qrcode-img",
+		"[class*='qrcode'] img",
+		".login-modal img",
+	}
+
+	var src *string
+	var err error
+	for _, selector := range qrcodeSelectors {
+		el, e := pp.Timeout(10 * time.Second).Element(selector)
+		if e == nil && el != nil {
+			src, err = el.Attribute("src")
+			if err == nil && src != nil && len(*src) > 0 {
+				break
+			}
+		}
+	}
+
 	if src == nil || len(*src) == 0 {
-		return "", false, errors.New("qrcode src is empty")
+		return "", false, errors.New("无法获取二维码，请检查页面是否正常加载")
 	}
 
 	return *src, false, nil
