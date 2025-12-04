@@ -115,18 +115,10 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 
 func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	pp := a.page.Context(ctx)
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	logrus.Info("开始等待扫码登录...")
-
-	// 登录成功的选择器
-	loginSuccessSelectors := []string{
-		".main-container .user .link-wrapper .channel",
-		".user .avatar",
-		".sidebar .user-info",
-		".side-bar .user",
-	}
 
 	checkCount := 0
 	for {
@@ -137,18 +129,17 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 		case <-ticker.C:
 			checkCount++
 
-			// 检测登录成功元素
-			for _, selector := range loginSuccessSelectors {
-				if exists, _, _ := pp.Has(selector); exists {
-					logrus.Info("检测到登录成功")
-					return true
-				}
+			// 每次检测都刷新页面，确保获取最新状态
+			pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
+			time.Sleep(1 * time.Second)
+
+			// 检测登录成功元素（与 CheckLoginStatus 一致）
+			if exists, _, _ := pp.Has(".main-container .user .link-wrapper .channel"); exists {
+				logrus.Info("检测到登录成功")
+				return true
 			}
 
-			// 每 30 秒输出一次日志
-			if checkCount%15 == 0 {
-				logrus.Infof("等待扫码中... (已等待 %d 秒)", checkCount*2)
-			}
+			logrus.Infof("等待扫码中... (已等待 %d 秒)", checkCount*5)
 		}
 	}
 }
