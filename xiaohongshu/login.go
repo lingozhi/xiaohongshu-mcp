@@ -115,20 +115,23 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 
 func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	pp := a.page.Context(ctx)
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 
-	logrus.Info("开始等待扫码登录（60秒后开始检测）...")
+	logrus.Info("开始等待扫码登录...")
 
-	// 先等待 60 秒，让用户有时间扫码
-	select {
-	case <-ctx.Done():
-		logrus.Warn("等待登录超时")
-		return false
-	case <-time.After(60 * time.Second):
-		logrus.Info("开始检测登录状态...")
+	// 扫码成功后页面可能出现的元素
+	successSelectors := []string{
+		".main-container .user .link-wrapper .channel", // 已登录用户信息
+		".login-success",                               // 登录成功提示
+		"[class*='success']",                           // 包含 success 的元素
 	}
 
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
+	// 二维码选择器（用于检测二维码是否消失）
+	qrcodeSelectors := []string{
+		".qrcode-img",
+		"[class*='qrcode'] img",
+	}
 
 	checkCount := 0
 	for {
@@ -139,17 +142,33 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 		case <-ticker.C:
 			checkCount++
 
-			// 导航到 explore 页面检测登录状态
-			pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
-			time.Sleep(1 * time.Second)
+			// 检测登录成功元素
+			for _, selector := range successSelectors {
+				if exists, _, _ := pp.Has(selector); exists {
+					logrus.Infof("检测到登录成功元素: %s", selector)
+					return true
+				}
+			}
 
-			// 检测登录成功元素（与 CheckLoginStatus 一致）
-			if exists, _, _ := pp.Has(".main-container .user .link-wrapper .channel"); exists {
-				logrus.Info("检测到登录成功")
+			// 检测二维码是否消失（扫码成功后二维码会消失）
+			qrcodeExists := false
+			for _, selector := range qrcodeSelectors {
+				if exists, _, _ := pp.Has(selector); exists {
+					qrcodeExists = true
+					break
+				}
+			}
+
+			if !qrcodeExists && checkCount > 5 {
+				// 二维码消失超过 10 秒，认为扫码成功
+				logrus.Info("二维码已消失，认为扫码成功")
 				return true
 			}
 
-			logrus.Infof("检测登录状态... (第 %d 次)", checkCount)
+			// 每 30 秒输出一次日志
+			if checkCount%15 == 0 {
+				logrus.Infof("等待扫码中... (已等待 %d 秒)", checkCount*2)
+			}
 		}
 	}
 }
