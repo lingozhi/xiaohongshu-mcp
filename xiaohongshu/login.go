@@ -21,18 +21,30 @@ func (a *LoginAction) CheckLoginStatus(ctx context.Context) (bool, error) {
 	pp := a.page.Context(ctx)
 	pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	exists, _, err := pp.Has(`.main-container .user .link-wrapper .channel`)
-	if err != nil {
-		return false, errors.Wrap(err, "check login status failed")
+	// 多个可能的登录成功选择器
+	selectors := []string{
+		".main-container .user .link-wrapper .channel",
+		".user .avatar",
+		".sidebar .user-info",
+		".side-bar .user",
+		".user-info",
+		"[class*='avatar']",
 	}
 
-	if !exists {
-		return false, errors.Wrap(err, "login status element not found")
+	for _, selector := range selectors {
+		exists, _, err := pp.Has(selector)
+		if err != nil {
+			continue
+		}
+		if exists {
+			logrus.Infof("检测到登录状态元素: %s", selector)
+			return true, nil
+		}
 	}
 
-	return true, nil
+	return false, errors.New("未检测到登录状态")
 }
 
 func (a *LoginAction) Login(ctx context.Context) error {
