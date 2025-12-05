@@ -2,13 +2,14 @@ package configs
 
 import (
 	"os"
-	"path/filepath"
 )
 
-const (
-	ImagesDir = "xiaohongshu_images"
-)
-
+// GetImagesPath 获取图片/视频保存路径
+// 优先使用环境变量 IMAGES_PATH，否则使用 /app/images
 func GetImagesPath() string {
-	return filepath.Join(os.TempDir(), ImagesDir)
+	path := os.Getenv("IMAGES_PATH")
+	if path == "" {
+		path = "/app/images"
+	}
+	return path
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/xpzouying/xiaohongshu-mcp/configs"
 )
 
@@ -23,7 +24,8 @@ type VideoDownloader struct {
 
 // NewVideoDownloader 创建视频下载器
 func NewVideoDownloader() *VideoDownloader {
-	savePath := configs.GetImagesPath() // 复用图片目录
+	savePath := configs.GetImagesPath()
+	logrus.Infof("视频保存路径: %s", savePath)
 	if err := os.MkdirAll(savePath, 0755); err != nil {
 		panic(fmt.Sprintf("failed to create save path: %v", err))
 	}
@@ -31,7 +33,7 @@ func NewVideoDownloader() *VideoDownloader {
 	return &VideoDownloader{
 		savePath: savePath,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Minute, // 视频下载超时时间更长
+			Timeout: 5 * time.Minute,
 		},
 	}
 }
@@ -39,12 +41,19 @@ func NewVideoDownloader() *VideoDownloader {
 // ProcessVideo 处理视频路径，支持 URL 下载或本地路径
 func (d *VideoDownloader) ProcessVideo(videoPath string) (string, error) {
 	if IsVideoURL(videoPath) {
-		return d.DownloadVideo(videoPath)
+		logrus.Infof("检测到视频 URL，开始下载: %s", videoPath)
+		localPath, err := d.DownloadVideo(videoPath)
+		if err != nil {
+			return "", err
+		}
+		logrus.Infof("视频下载完成: %s", localPath)
+		return localPath, nil
 	}
 	// 本地路径直接返回
 	if _, err := os.Stat(videoPath); err != nil {
 		return "", errors.Wrapf(err, "视频文件不存在: %s", videoPath)
 	}
+	logrus.Infof("使用本地视频: %s", videoPath)
 	return videoPath, nil
 }
 
