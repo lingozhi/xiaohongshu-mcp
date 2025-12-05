@@ -20,14 +20,24 @@ type PublishVideoContent struct {
 	VideoPath string
 }
 
-// NewPublishVideoAction 进入发布页并切换到“上传视频”
+// NewPublishVideoAction 进入发布页并切换到"上传视频"
 func NewPublishVideoAction(page *rod.Page) (*PublishAction, error) {
-	pp := page.Timeout(300 * time.Second)
+	pp := page.Timeout(5 * time.Minute)
 
-	pp.MustNavigate(urlOfPublic).MustWaitIdle().MustWaitDOMStable()
-	time.Sleep(1 * time.Second)
+	slog.Info("导航到发布页面")
+	if err := pp.Navigate(urlOfPublic); err != nil {
+		return nil, errors.Wrap(err, "导航到发布页面失败")
+	}
 
-	if err := mustClickPublishTab(page, "上传视频"); err != nil {
+	slog.Info("等待页面加载完成")
+	if err := pp.WaitLoad(); err != nil {
+		return nil, errors.Wrap(err, "等待页面加载失败")
+	}
+
+	time.Sleep(2 * time.Second)
+
+	slog.Info("切换到上传视频标签")
+	if err := mustClickPublishTab(pp, "上传视频"); err != nil {
 		return nil, errors.Wrap(err, "切换到上传视频失败")
 	}
 
