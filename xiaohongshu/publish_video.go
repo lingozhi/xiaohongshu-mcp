@@ -33,7 +33,14 @@ func NewPublishVideoAction(page *rod.Page) (*PublishAction, error) {
 	}
 	wait()
 
-	slog.Info("页面加载完成")
+	// 检查当前 URL，判断是否被重定向到登录页
+	currentURL := pp.MustInfo().URL
+	slog.Info("页面加载完成", "current_url", currentURL)
+
+	if strings.Contains(currentURL, "login") {
+		return nil, errors.New("未登录或登录已过期，请先扫码登录")
+	}
+
 	time.Sleep(3 * time.Second)
 
 	slog.Info("切换到上传视频标签")
