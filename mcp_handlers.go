@@ -140,9 +140,14 @@ func (s *AppServer) handlePublishContent(ctx context.Context, args map[string]in
 		Tags:    tags,
 	}
 
+	// 使用独立的 context，避免客户端超时导致操作被取消
+	publishCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
 	// 执行发布
-	result, err := s.xiaohongshuService.PublishContent(ctx, req)
+	result, err := s.xiaohongshuService.PublishContent(publishCtx, req)
 	if err != nil {
+		logrus.Errorf("内容发布失败: %v", err)
 		return &MCPToolResult{
 			Content: []MCPContent{{
 				Type: "text",
@@ -197,9 +202,15 @@ func (s *AppServer) handlePublishVideo(ctx context.Context, args map[string]inte
 		Tags:    tags,
 	}
 
+	// 使用独立的 context，避免客户端超时导致操作被取消
+	// 视频发布可能需要较长时间（下载+上传+处理）
+	publishCtx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
 	// 执行发布
-	result, err := s.xiaohongshuService.PublishVideo(ctx, req)
+	result, err := s.xiaohongshuService.PublishVideo(publishCtx, req)
 	if err != nil {
+		logrus.Errorf("视频发布失败: %v", err)
 		return &MCPToolResult{
 			Content: []MCPContent{{
 				Type: "text",
