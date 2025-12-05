@@ -2,6 +2,7 @@ package xiaohongshu
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -20,18 +21,32 @@ func NewLogin(page *rod.Page) *LoginAction {
 
 func (a *LoginAction) CheckLoginStatus(ctx context.Context) (bool, error) {
 	pp := a.page.Context(ctx)
-	pp.MustNavigate("https://www.xiaohongshu.com/explore").MustWaitLoad()
+
+	// 检查创作者平台的登录状态（和发布视频使用同一域名）
+	creatorURL := "https://creator.xiaohongshu.com/publish/publish?source=official"
+	logrus.Infof("检查登录状态: %s", creatorURL)
+
+	wait := pp.WaitNavigation(proto.PageLifecycleEventNameNetworkAlmostIdle)
+	if err := pp.Navigate(creatorURL); err != nil {
+		return false, errors.Wrap(err, "导航到创作者平台失败")
+	}
+	wait()
 
 	time.Sleep(2 * time.Second)
 
-	// 多个可能的登录成功选择器
+	// 检查是否被重定向到登录页
+	currentURL := pp.MustInfo().URL
+	logrus.Infof("当前页面 URL: %s", currentURL)
+
+	if strings.Contains(currentURL, "login") {
+		return false, nil
+	}
+
+	// 检查是否有上传区域（说明已登录且在发布页面）
 	selectors := []string{
-		".main-container .user .link-wrapper .channel",
-		".user .avatar",
-		".sidebar .user-info",
-		".side-bar .user",
-		".user-info",
-		"[class*='avatar']",
+		"div.upload-content",
+		"div.creator-tab",
+		".upload-wrapper",
 	}
 
 	for _, selector := range selectors {
@@ -45,7 +60,7 @@ func (a *LoginAction) CheckLoginStatus(ctx context.Context) (bool, error) {
 		}
 	}
 
-	return false, errors.New("未检测到登录状态")
+	return false, nil
 }
 
 func (a *LoginAction) Login(ctx context.Context) error {
