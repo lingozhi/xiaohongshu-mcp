@@ -38,8 +38,11 @@ func (s *AppServer) Start(port string) error {
 	s.router = setupRoutes(s)
 
 	s.httpServer = &http.Server{
-		Addr:    port,
-		Handler: s.router,
+		Addr:         port,
+		Handler:      s.router,
+		ReadTimeout:  15 * time.Minute,
+		WriteTimeout: 15 * time.Minute,
+		IdleTimeout:  15 * time.Minute,
 	}
 
 	// 启动服务器的 goroutine
