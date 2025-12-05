@@ -5,10 +5,10 @@ services:
     restart: unless-stopped
     tty: true
     volumes:
-      - ./data:/app/data
-      - ./images:/app/images
+      - ./data:/data
     environment:
       - ROD_BROWSER_BIN=/usr/bin/google-chrome
-      - COOKIES_PATH=/app/data/cookies.json
+      - COOKIES_PATH=/data/cookies.json
+      - IMAGES_PATH=/data/images
     ports:
       - "18060:18060"

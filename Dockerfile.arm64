@@ -75,13 +75,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /out/app .
 
-# 3. 创建共享目录并设置权限
-RUN mkdir -p /app/images && \
-    chmod 777 /app/images
+# 3. 创建持久化目录并设置权限（Railway 使用 /data 卷）
+RUN mkdir -p /data/images && \
+    chmod 777 /data /data/images
 
 # 4. 不设置 ROD_BROWSER_BIN 环境变量
 # go-rod 会自动检测并下载适合 ARM64 架构的 Chromium 浏览器
 # Chromium 下载源：https://playwright.azureedge.net/builds/chromium/
+
+# 5. 设置持久化路径环境变量
+ENV COOKIES_PATH=/data/cookies.json
+ENV IMAGES_PATH=/data/images
 
 EXPOSE 18060
 
