@@ -24,17 +24,17 @@ type PublishVideoContent struct {
 func NewPublishVideoAction(page *rod.Page) (*PublishAction, error) {
 	pp := page.Timeout(5 * time.Minute)
 
-	slog.Info("导航到发布页面")
+	slog.Info("导航到发布页面", "url", urlOfPublic)
+
+	// 使用 WaitNavigation 处理可能的重定向
+	wait := pp.WaitNavigation(proto.PageLifecycleEventNameNetworkAlmostIdle)
 	if err := pp.Navigate(urlOfPublic); err != nil {
 		return nil, errors.Wrap(err, "导航到发布页面失败")
 	}
+	wait()
 
-	slog.Info("等待页面加载完成")
-	if err := pp.WaitLoad(); err != nil {
-		return nil, errors.Wrap(err, "等待页面加载失败")
-	}
-
-	time.Sleep(2 * time.Second)
+	slog.Info("页面加载完成")
+	time.Sleep(3 * time.Second)
 
 	slog.Info("切换到上传视频标签")
 	if err := mustClickPublishTab(pp, "上传视频"); err != nil {

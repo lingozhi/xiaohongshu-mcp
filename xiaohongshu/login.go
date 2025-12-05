@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -92,7 +93,10 @@ func (a *LoginAction) FetchQrcodeImage(ctx context.Context) (string, bool, error
 	}
 	for _, selector := range loginBtnSelectors {
 		if el, err := pp.Timeout(2 * time.Second).Element(selector); err == nil && el != nil {
-			_ = el.MustClick()
+			if err := el.Click(proto.InputMouseButtonLeft, 1); err != nil {
+				logrus.Warnf("点击登录按钮失败: %v", err)
+				continue
+			}
 			time.Sleep(1 * time.Second)
 			break
 		}
@@ -135,8 +139,8 @@ func (a *LoginAction) WaitForLogin(ctx context.Context) bool {
 	// 扫码成功后页面可能出现的元素
 	successSelectors := []string{
 		".main-container .user .link-wrapper .channel", // 已登录用户信息
-		".login-success",                               // 登录成功提示
-		"[class*='success']",                           // 包含 success 的元素
+		".login-success",     // 登录成功提示
+		"[class*='success']", // 包含 success 的元素
 	}
 
 	// 二维码选择器（用于检测二维码是否消失）
