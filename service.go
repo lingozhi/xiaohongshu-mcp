@@ -268,18 +268,30 @@ func (s *XiaohongshuService) PublishVideo(ctx context.Context, req *PublishVideo
 
 // publishVideo 执行视频发布
 func (s *XiaohongshuService) publishVideo(ctx context.Context, content xiaohongshu.PublishVideoContent) error {
+	logrus.Info("开始发布视频流程")
+
 	b := newBrowser()
 	defer b.Close()
 
 	page := b.NewPage()
 	defer page.Close()
 
+	logrus.Info("浏览器页面创建完成，进入发布页面")
 	action, err := xiaohongshu.NewPublishVideoAction(page)
 	if err != nil {
+		logrus.Errorf("进入发布页面失败: %v", err)
 		return err
 	}
 
-	return action.PublishVideo(ctx, content)
+	logrus.Infof("开始上传视频: %s", content.VideoPath)
+	err = action.PublishVideo(ctx, content)
+	if err != nil {
+		logrus.Errorf("视频发布失败: %v", err)
+		return err
+	}
+
+	logrus.Info("视频发布完成")
+	return nil
 }
 
 // ListFeeds 获取Feeds列表
