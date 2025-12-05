@@ -227,19 +227,22 @@ func (s *XiaohongshuService) publishContent(ctx context.Context, content xiaohon
 	return action.Publish(ctx, content)
 }
 
-// PublishVideo 发布视频（本地文件）
+// PublishVideo 发布视频（支持本地文件或 URL）
 func (s *XiaohongshuService) PublishVideo(ctx context.Context, req *PublishVideoRequest) (*PublishVideoResponse, error) {
 	// 标题长度校验
 	if titleWidth := runewidth.StringWidth(req.Title); titleWidth > 40 {
 		return nil, fmt.Errorf("标题长度超过限制")
 	}
 
-	// 本地视频文件校验
 	if req.Video == "" {
-		return nil, fmt.Errorf("必须提供本地视频文件")
+		return nil, fmt.Errorf("必须提供视频文件路径或 URL")
 	}
-	if _, err := os.Stat(req.Video); err != nil {
-		return nil, fmt.Errorf("视频文件不存在或不可访问: %v", err)
+
+	// 处理视频：支持 URL 下载或本地路径
+	videoDownloader := downloader.NewVideoDownloader()
+	videoPath, err := videoDownloader.ProcessVideo(req.Video)
+	if err != nil {
+		return nil, fmt.Errorf("处理视频失败: %v", err)
 	}
 
 	// 构建发布内容
@@ -247,7 +250,7 @@ func (s *XiaohongshuService) PublishVideo(ctx context.Context, req *PublishVideo
 		Title:     req.Title,
 		Content:   req.Content,
 		Tags:      req.Tags,
-		VideoPath: req.Video,
+		VideoPath: videoPath,
 	}
 
 	// 执行发布

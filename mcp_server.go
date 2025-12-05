@@ -20,11 +20,11 @@ type PublishContentArgs struct {
 	Tags    []string `json:"tags,omitempty" jsonschema:"话题标签列表（可选参数），如 [美食, 旅行, 生活]"`
 }
 
-// PublishVideoArgs 发布视频的参数（仅支持本地单个视频文件）
+// PublishVideoArgs 发布视频的参数（支持本地文件或 URL）
 type PublishVideoArgs struct {
 	Title   string   `json:"title" jsonschema:"内容标题（小红书限制：最多20个中文字或英文单词）"`
 	Content string   `json:"content" jsonschema:"正文内容，不包含以#开头的标签内容，所有话题标签都用tags参数来生成和提供即可"`
-	Video   string   `json:"video" jsonschema:"本地视频绝对路径（仅支持单个视频文件，如:/Users/user/video.mp4）"`
+	Video   string   `json:"video" jsonschema:"视频路径，支持本地绝对路径或 URL（如: /path/to/video.mp4 或 https://example.com/video.mp4）"`
 	Tags    []string `json:"tags,omitempty" jsonschema:"话题标签列表（可选参数），如 [美食, 旅行, 生活]"`
 }
 
